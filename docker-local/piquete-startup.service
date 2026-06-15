@@ -1,0 +1,17 @@
+[Unit]
+Description=Piquete — Atualiza Tunnel e Deploy Firebase
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=mauro
+WorkingDirectory=/run/media/mauro/290D3DC253282DEF/Workspace/Piquete/docker-local
+ExecStart=/run/media/mauro/290D3DC253282DEF/Workspace/Piquete/docker-local/atualizar-tunnel.sh
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

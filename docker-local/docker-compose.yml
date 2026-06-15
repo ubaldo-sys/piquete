@@ -1,0 +1,72 @@
+services:
+
+  # ─── n8n ────────────────────────────────────────────────────────────────────
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      # URL pública do Cloudflare Tunnel — atualize sempre que reiniciar o tunnel
+      - WEBHOOK_URL=${TUNNEL_URL}
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - TZ=America/Sao_Paulo
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+  # ─── Evolution API ──────────────────────────────────────────────────────────
+  evolution:
+    image: atendai/evolution-api:v2.1.1
+    container_name: evolution
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - evolution.env
+    volumes:
+      - evolution_data:/evolution/instances
+    depends_on:
+      - postgres
+
+# ─── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=evolution
+      - POSTGRES_PASSWORD=evolution123
+      - POSTGRES_DB=evolution
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      
+  # ─── Portainer ──────────────────────────────────────────────────────────────
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+# ─── Cloudflare Tunnel ──────────────────────────────────────────────────────
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    network_mode: host
+    command: tunnel --url http://localhost:5678 --no-autoupdate
+    depends_on:
+      - n8n
+      
+volumes:
+  n8n_data:
+  evolution_data:
+  portainer_data:
+  postgres_data:
